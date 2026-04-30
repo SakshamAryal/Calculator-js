@@ -1,6 +1,5 @@
 const textbox = document.getElementById("display"); //works
-const num = document.getElementsByClassName("numbers");
-const numeric = Array.from(num);
+const numeric = Array.from(document.getElementsByClassName("numbers"));
 let currOperation;
 numeric.forEach((number) => {
   number.addEventListener("click", () => inputnum(number));
@@ -10,8 +9,7 @@ function inputnum(number) {
   newvalue += String(number.textContent);
   textbox.value = Number(newvalue);
 }
-let operations = document.getElementsByClassName("operation");
-const operations = Array.from(operations);
+const operations = Array.from(document.getElementsByClassName("operation"));
 let a;
 operations.forEach((operation) => {
   operation.addEventListener("click", () => arithmetic(operation));
@@ -23,5 +21,10 @@ function arithmetic(operation) {
     return;
   }
   if (currOperation === "x") {
+    b = textbox.value
+    a = product(a,b)
   }
+}
+function product(a, b){
+  return a*b
 }
