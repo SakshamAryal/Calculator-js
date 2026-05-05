@@ -1,9 +1,11 @@
 const textbox = document.getElementById("display"); //works
 const numeric = Array.from(document.getElementsByClassName("numbers"));
-let prevOperation;
+let prevOperation = NaN;
 let a, b;
+const clean = document.getElementById("reset");
 let reset = false, equals = false;
 lastAction = NaN;
+clean.addEventListener("click", clear);
 numeric.forEach((number) => {
   number.addEventListener("click", () => inputnum(number));
 });
@@ -28,15 +30,21 @@ operations.forEach((operation) => {
 });
 // handles the operation and how the calculator reacts for arithmetic processes
 function process(operation) {
-  if (prevOperation !== prevOperation){
-    a = textbox.value;
-  }
-  else {
-    if(!isNaN(a)){
-      b = textbox.value;
-    };
-  };
   reset = true;
+  if (prevOperation !== prevOperation){
+    a = Number(textbox.value);
+    if (operation.textContent == "="){
+      equals = true;
+    }
+    else{
+      prevOperation = operation.textContent;
+    }
+    return;
+  }
+  else if (!isNaN(a) & lastAction == 'num'){
+      b = Number(textbox.value);
+  };
+  lastAction = 'arith'
   tempOperation = prevOperation;
   if (operation.textContent == "="){
     solve(operation.textContent);
@@ -72,7 +80,7 @@ function solve(type){
     return
   }
   result = arithmetic(prevOperation)
-  textbox.value = result;
+  textbox.value = Number(result);
   a = result;
 };
 function clear(){
