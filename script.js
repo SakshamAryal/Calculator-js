@@ -2,114 +2,155 @@ const textbox = document.getElementById("display");
 const numeric = Array.from(document.getElementsByClassName("numbers"));
 const clean = document.getElementById("reset");
 const inverse = document.getElementById("sign");
+const operations = Array.from(document.getElementsByClassName("operation"));
+const precedence = {"+": 1, "-": 1, "÷": 2, "x": 2};
+const decimal = document.getElementById("decimal");
+const backspace = document.getElementById("backspace");
+const equals = document.getElementById("equals");
 //for each operation in stack, its going to be a tuple where the 
 //0th index contains type of button, and 1st index contains textContent 
 //of the button
 let stack = [];
+let inputbuffer = "";
+
+backspace.addEventListener("click", undo);
 inverse.addEventListener("click", signChange);
 clean.addEventListener("click", clear);
+decimal.addEventListener("click", addDecimal);
+equals.addEventListener("click", equalsProcess);
 numeric.forEach((number) => {
-  number.addEventListener("click", () => inputNum(number));
+  number.addEventListener("click", () => inputNum(number.textContent));
+});
+
+operations.forEach((operation) => {
+  operation.addEventListener("click", () => operatorProcess(operation.textContent));
 });
 // handles input using the buttons
 function inputNum(number) {
   const last = stack.pop();
-  if (last != null){
-    if (last[0] == "result"){
-    clear();
+  if (last != null || inputbuffer != ""){
+    if (last != null && last[0] == "result"){
+      clear();
+      changeDisplay(number)
+    }
+    else if(inputbuffer == ""){
+      changeDisplay(textbox.value + " " + number);
+    }
+    else {
+      changeDisplay(textbox.value + number);
     };
     stack.push(last);
+  }
+  else {
+    changeDisplay(number);
   };
-  changeDisplay(textbox.value + " " + number.textContent);
-  stack.push(["number", Number(number.textContent)]);
+  inputbuffer += number;
 };
-const operations = Array.from(document.getElementsByClassName("operation"));
-operations.forEach((operation) => {
-  operation.addEventListener("click", () => operatorProcess(operation));
-});
 
 // handles the operation and how the calculator reacts for arithmetic processes
-function operatorProcess(operation){
+function operatorProcess(operator){
+  if (!fixInput() && stack.length == 0){
+    return;
+  }
+  const last = stack.pop();
+  if (last[0] == "operation"){
+    stack.push(["operation", operator]);
+    changeDisplay(textbox.value.slice(0, -1) + operator);
+  }
+  else {
+    changeDisplay(textbox.value + " " + operator);
+    stack.push(last);
+    stack.push(["operation", operator]);
+  };
+
+}
+
+function equalsProcess(){
   if (stack.length == 0){
     return;
   };
-  const last = stack.pop();
-  if (last[0] == "operation"){
-    stack.push(["operation", operation.textContent]);
-    changeDisplay(textbox.value.slice(0, -1) + operation.textContent);
-    return;
-  }
-  else {
-    stack.push(last)
-  };
-  if (checkSolve()){
-    let result = exprCalculation();
-    if (result != "error") {
-      if (operation.textContent != "=") {
-        changeDisplay(result + " " + operation.textContent);
-      }
-      else {
-        changeDisplay(result)
-      }
-      stack.push(["result", result])
-    };
-  }
-  else {
-    changeDisplay(textbox.value + " " + operation.textContent);
-  };
-  if (operation.textContent != "="){
-    stack.push(["operation", operation.textContent])
+  if (fixInput() || checkSolve()){
+    result = calculate();
+    stack.push(["result", result]);
+    changeDisplay(result)
   }
 }
 
+function fixInput(){
+  if (inputbuffer == ""){
+    return false;
+  }
+  else{
+    stack.push(["number", parseFloat(inputbuffer)])
+    inputbuffer = ""
+    return true
+  };
+};
 function checkSolve(){
   let copy = stack.slice();
-  let last = copy.pop();
-  while (copy.length != 0){
-    if (last[0] == "operation") {
-      return true;
-    };
-    last = copy.pop();
-  };
-  return false;
-}
-
-// precondition: this is a valid stack, all necessary checks done before this part
-function exprCalculation(){
-  let expression = {}
-  setVariable(expression);
-  setVariable(expression);
-  result =  arithmetic(expression.a, expression.b, expression.operator);
-  return result;
-}
-
-function setVariable(expression){
-  let last = stack.pop();
-  let i = 0;
-  let num = 0;
-  while (last[0] != "operation") {
-    if(last[0] == "decimal") {
-      num = num/10**i;
+  let numcount = 0;
+  let operatorcount = 0;
+  while (copy.length >= 1){
+    last = copy.pop()
+    if (last[0] == "operation"){
+      operatorcount += 1
     }
     else {
-      num = num + last[1]*10**i;
-    };
-    last = stack.pop();
-    if (last == null){
-      break;
+      numcount += 1
     }
-    i += 1;
   }
-  if (Object.keys(expression).length === 0 && 
-    expression.constructor === Object) {
-      expression.b = num;
-      expression.operator = last[1];
-    }
-  else{
-    expression.a = num;
-  }
+  return (numcount == operatorcount + 1);
 }
 
+function addDecimal(){
+  if (!inputbuffer.includes(".")){
+    inputbuffer += ".";
+    if (inputbuffer == "."){
+      changeDisplay(textbox.value + " " + inputbuffer)
+    }
+    else {
+      changeDisplay(textbox.value + ".")
+    }
+  };
+}
+// precondition: this is a valid stack, all necessary checks done before this part
+
+function calculate(){
+  let exprStack = [];
+  let numStack = [];
+  let last = stack.pop();
+  while (last != null){
+    if (last[0] == "number" || last[0] == "result"){
+      numStack.push(last[1]);
+    }
+    else if (numStack.length >= 2 & exprStack.length > 0){
+      precedenceCheck(numStack, exprStack, last[1]);
+    }
+    else {
+      exprStack.push(last[1]);
+    };
+    last = stack.pop()
+  }
+  while (numStack.length != 1 && exprStack.length != 0){
+    numStack.push(arithmetic(numStack.pop(), numStack.pop(), exprStack.pop()))
+  }
+  return numStack.pop()
+}
+function precedenceCheck(numStack, exprStack, last){
+  while(exprStack.length > 0){
+    let current = exprStack.pop()
+    if (precedence[last] < precedence[current]){
+      a = numStack.pop();
+      b = numStack.pop();
+      numStack.push(arithmetic(a, b, current));
+    }
+    else {
+      exprStack.push(current);
+      break;
+    }
+  }
+  exprStack.push(last)
+}
 //takes care of all the arithmetic process
 function arithmetic(a, b, type){
   switch (type){
@@ -134,6 +175,7 @@ function arithmetic(a, b, type){
 function clear(){
   changeDisplay("")
   stack = [];
+  inputbuffer = "";
 };
 
 function changeDisplay(text){
@@ -141,34 +183,27 @@ function changeDisplay(text){
 }
 
 function signChange(){
-  let copy = [];
-  let change = false;
-  let display = textbox.value.split(" ");
-  if (stack.length != 0){
-    last = stack.pop();
-    copy.push(last);
-    while (last[0] != "arithmetic") {
-      if (last[0] == "sign"){
-        change = last != null;
-        break;
-      };
-      last = stack.pop();
-      copy.push(last);
-      if (last == null){
-        break;
-      }
-    }
-    if (!change) {
-      stack.push(["sign", "-"])
-      display[display.length - 1] = `(-${display})`
-    }
-    else {
-      display[display.length - 1].replace("/[^0-9]/g", "")
-    };
-    while (copy.length != 0){
-      stack.push(copy.pop());
-    };
-    console.log(display.join(" "))
+  if (!fixInput() && !checkSolve()){
+    return
   }
+  let last = stack.pop()
+  let display = textbox.value.split(" ");
+  if (last[1] > 0){
+    display[display.length - 1] = `(-${display[display.length - 1]})`
+  }
+  else if (last[1] < 0) {
+    display[display.length - 1] = display[display.length - 1].replace(/[^0-9]/g, "")
+  }
+  stack.push([last[0], last[1]*(-1)])
   changeDisplay(display.join(" "))
+}
+
+function undo(){
+  changeDisplay(textbox.value.slice(0, -1))
+  if (inputbuffer != ""){
+      inputbuffer = inputbuffer.slice(0, -1);
+  }
+  else {
+    stack.pop();
+  }
 }
