@@ -7,6 +7,24 @@ const precedence = {"+": 1, "-": 1, "÷": 2, "x": 2};
 const decimal = document.getElementById("decimal");
 const backspace = document.getElementById("backspace");
 const equals = document.getElementById("equals");
+const percent = document.getElementById("percentage");
+const historyCont = document.querySelector(".history");
+percent.addEventListener("click", percentage);
+const previousStyle = {
+  display: "flex",
+  alignItems: "end",
+  backgroundColor: "#91C8E4",
+  flexDirection: "column",
+  height : "70px",
+  width : "280px",
+  flex: "0 1 auto",
+  gap: "10px",
+  justifyContent: "space-between",
+  border: "1px solid black",
+  borderRadius: "20px",
+  padding: "10px",
+  boxSizing: "border-box",
+};
 //for each operation in stack, its going to be a tuple where the 
 //0th index contains type of button, and 1st index contains textContent 
 //of the button
@@ -31,15 +49,17 @@ function inputNum(number) {
   if (last != null || inputbuffer != ""){
     if (last != null && last[0] == "result"){
       clear();
-      changeDisplay(number)
+      changeDisplay(number);
     }
-    else if(inputbuffer == ""){
-      changeDisplay(textbox.value + " " + number);
+    else if (last != null && (last[0] == "percent" || last[0] == "operation")){
+      if(inputbuffer == ""){
+        changeDisplay(textbox.value + " " + number);
+      }
+      stack.push(last);
     }
     else {
       changeDisplay(textbox.value + number);
     };
-    stack.push(last);
   }
   else {
     changeDisplay(number);
@@ -58,9 +78,9 @@ function operatorProcess(operator){
     changeDisplay(textbox.value.slice(0, -1) + operator);
   }
   else {
-    changeDisplay(textbox.value + " " + operator);
     stack.push(last);
     stack.push(["operation", operator]);
+    changeDisplay(textbox.value + " " + operator);
   };
 
 }
@@ -70,9 +90,11 @@ function equalsProcess(){
     return;
   };
   if (fixInput() || checkSolve()){
+    historyDisplay = textbox.value;
     result = calculate();
+    addHistory(historyDisplay, result)
     stack.push(["result", result]);
-    changeDisplay(result)
+    changeDisplay(result);
   }
 }
 
@@ -92,7 +114,7 @@ function checkSolve(){
   let operatorcount = 0;
   while (copy.length >= 1){
     last = copy.pop()
-    if (last[0] == "operation"){
+    if (last[0] == "operation" || last[0] == "percent"){
       operatorcount += 1
     }
     else {
@@ -206,4 +228,33 @@ function undo(){
   else {
     stack.pop();
   }
+}
+
+function percentage(){
+  const add = [0.01 , "x"]
+  if (fixInput()){
+    last = stack.pop()
+    last[1] /= 100;
+    changeDisplay(textbox.value.slice(0, -1) + last[1]);
+    stack.push(last);
+  }
+  else{
+    stack.push(['number', 0.01]);
+    stack.push(['percent', "x"]);
+      changeDisplay(textbox.value + " " + add.join(" "));
+  };
+}
+
+function addHistory(expression, result){
+  const newhistory = document.createElement("div");
+  Object.assign(newhistory.style, previousStyle);
+  const expressionPara = document.createElement("p");
+  expressionPara.textContent = expression;
+  const resultPara = document.createElement('p');
+  resultPara.textContent = result;
+  expressionPara.style.margin = "0";
+  resultPara.style.margin = "0";
+  newhistory.appendChild(expressionPara);
+  newhistory.appendChild(resultPara);
+  historyCont.appendChild(newhistory)
 }

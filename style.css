@@ -3,7 +3,8 @@ body {
     align-items: center;
     height: 100vh;
     font-family: Arial, sans-serif;
-    flex: 0 1 auto
+    flex: 1 1 auto;
+    background-color: #FFFBDE;
 }
 
 button {
@@ -13,7 +14,8 @@ button {
     height: 50px;
     justify-content: center;
     align-items: center;
-    flex: 0 1 auto
+    flex: 0 1 auto;
+    background-color: #91C8E4;
 }
 
 input {
@@ -26,11 +28,14 @@ input {
 .history {
     display: flex;
     flex-direction: column;
-    overflow: scroll;
+    box-sizing: border-box;
+    overflow: auto;
     height: 500px;
     width: 300px;
     border: 1px solid black;
     border-radius: 20px;
+    background-color: #4682A9;
+    padding: 8px;
 }
 .history-container {
     display: flex;
@@ -54,6 +59,7 @@ input {
     border: 1px solid black;
     box-sizing: border-box;
     gap: 5px;
+    background-color: #4682A9;
 }
 
 .display{
@@ -70,12 +76,3 @@ input {
     justify-content: space-between;
     box-sizing: border-box;
 }
-
-.previous {
-    display: flex;
-    align-items: end;
-    flex-direction: column;
-    flex: 1 1 auto;
-}
-
-    
