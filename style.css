@@ -16,6 +16,7 @@ button {
     align-items: center;
     flex: 0 1 auto;
     background-color: #91C8E4;
+    cursor: pointer;
 }
 
 input {
